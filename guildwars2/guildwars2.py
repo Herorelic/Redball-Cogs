@@ -1771,7 +1771,7 @@ class Guildwars2:
 			return
 	
 	@commands.command(pass_context=True)
-	async def UBM(self, ctx, MC_price_str : str = "0"):
+	async def ubm(self, ctx, MC_price_str : str = "0"):
 		"""This displays which way of converting unbound magic to gold is the most profitable.
 		It takes as an optional argument the value the user gives to mystic coins (in copper), defaults to 0"""
 		user = ctx.message.author
@@ -1916,8 +1916,8 @@ class Guildwars2:
 		
 		buy_avg = 0
 		sell_avg = 0
-		buy_min = last_week[0]["buy"]
-		sell_min = last_week[0]["sell"]
+		buy_min = float("inf")
+		sell_min = float("inf")
 		buy_max = 0
 		sell_max = 0
 		
@@ -1936,7 +1936,7 @@ class Guildwars2:
 		sell_avg /= len(last_week)
 		
 		# Display data
-		data = discord.Embed(title="Daily average of id " + item_id, colour=color)
+		data = discord.Embed(title="Daily average of id " + choiceid, colour=color)
 		data.add_field(name="Average Buy",value=self.gold_to_coins(buy_avg))
 		data.add_field(name="Minimum Buy",value=self.gold_to_coins(buy_min))
 		data.add_field(name="Maximum Buy",value=self.gold_to_coins(buy_max))
@@ -2635,12 +2635,17 @@ class Guildwars2:
 			try:
 				if await self.update_build():
 					channels = await self.get_channels()
+					try:
+						link = await self.get_patchnotes()
+						patchnotes = "\nPatchnotes: " + link
+					except:
+						patchnotes = ""
 					if channels:
 						for channel in channels:
 							try:
 								await self.bot.send_message(self.bot.get_channel(channel),
 															"Guild Wars 2 has just updated! New build: "
-															"`{0}`".format(self.build["id"]))
+															"`{0}`{1}".format(self.build["id"], patchnotes))
 							except:
 								pass
 					else:
@@ -2653,6 +2658,14 @@ class Guildwars2:
 					"Update ontifier has encountered an exception: {0}\nExecution will continue".format(e))
 				await asyncio.sleep(300)
 				continue
+
+	async def get_patchnotes(self):
+		url = "https://forum-en.guildwars2.com/forum/info/updates"
+		async with self.session.get(url) as r:
+			results = await r.text()
+		soup = BeautifulSoup(results, 'html.parser')
+		post = soup.find(class_="arenanet topic")
+		return "https://forum-en.guildwars2.com" + post.find("a")["href"]		
 
 	async def getworldid(self, world):
 		if world is None:
